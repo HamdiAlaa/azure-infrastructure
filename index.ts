@@ -9,7 +9,7 @@ let ipAddressesList: Output<string>[] = [];
 let dnsOutputArray: Output<string>[] = [];
 
 //Create an Azure Resource Group
-const resourceGroup = new azure.core.ResourceGroup("Azure-nodes-RG", {
+const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__config.tag}`, {
     location: __config.location,
 });
 const resourceGroupName = resourceGroup.name;
@@ -39,7 +39,7 @@ for (let index = 1; index <= __config.vmNumber; index++) {
     const publicIp = new azure.network.PublicIp(`serverIp${index}`, {
         resourceGroupName,
         allocationMethod: "Dynamic",
-        domainNameLabel:`vm-azure-dns${index}`,
+        domainNameLabel:`dns-${__config.tag}-${index}`,
     });
 
     const mainNetworkInterface = new azure.network.NetworkInterface(`main${index}`, {
@@ -84,7 +84,7 @@ for (let index = 1; index <= __config.vmNumber; index++) {
             name: `mytestosdisk${index}`,
         },
         tags: {
-            environment: "staging",
+            environment: __config.tag,
         },
         vmSize: __config.vmsize,
     });
@@ -113,5 +113,5 @@ const account = new azure.storage.Account("storage", {
 
 //EXPORTS
 // export const ips = az_infra.ipAddress;
-// export const ips = az_infra.ipAddressesList;
-// export const dns = az_infra.dnsOutputArray;
+export const ips = ipAddressesList;
+export const dns = dnsOutputArray;
