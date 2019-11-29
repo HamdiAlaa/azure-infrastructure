@@ -9,15 +9,15 @@ let ipAddressesList: Output<string>[] = [];
 let dnsOutputArray: Output<string>[] = [];
 
 //Create an Azure Resource Group
-const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__config.tag}`, {
-    location: __config.location,
+const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__config.params.tag}`, {
+    location: __config.params.location,
 });
 const resourceGroupName = resourceGroup.name;
 //NetWork
 const mainVirtualNetwork = new azure.network.VirtualNetwork("main", {
     addressSpaces: ["10.0.0.0/16"],
     location: resourceGroup.location,
-    name: `${__config.tag}-network`,
+    name: `${__config.params.tag}-network`,
     resourceGroupName: resourceGroup.name,
 });
 
@@ -33,13 +33,13 @@ const internal = new azure.network.Subnet("internal", {
 
 
 // main interface
-for (let index = 1; index <= __config.vmNumber; index++) {
+for (let index = 1; index <= __config.params.vm_number; index++) {
 
     // Now allocate a public IP and assign it to our NIC.
     const publicIp = new azure.network.PublicIp(`serverIp${index}`, {
         resourceGroupName,
         allocationMethod: "Dynamic",
-        domainNameLabel:`dns-${__config.tag}-${index}`,
+        domainNameLabel:`dns-${__config.params.tag}-${index}`,
     });
 
     const mainNetworkInterface = new azure.network.NetworkInterface(`main${index}`, {
@@ -50,7 +50,7 @@ for (let index = 1; index <= __config.vmNumber; index++) {
             publicIpAddressId: publicIp.id
         }],
         location: resourceGroup.location,
-        name: `${__config.tag}-nic-${index}`,
+        name: `${__config.params.tag}-nic-${index}`,
         resourceGroupName: resourceGroup.name,
     });
 
@@ -58,11 +58,11 @@ for (let index = 1; index <= __config.vmNumber; index++) {
 
     const mainVirtualMachine = new azure.compute.VirtualMachine(`VM-${index}`, {
         location: resourceGroup.location,
-        name: `${__config.tag}-vm-${index}`,
+        name: `${__config.params.tag}-vm-${index}`,
         networkInterfaceIds: [mainNetworkInterface.id],
         osProfile: {
-            adminPassword: __config.password,
-            adminUsername: __config.username,
+            adminPassword: __config.params.password,
+            adminUsername: __config.params.username,
             computerName: `hostname${index}`,
         },
         deleteDataDisksOnTermination: true,
@@ -72,10 +72,10 @@ for (let index = 1; index <= __config.vmNumber; index++) {
         },
         resourceGroupName: resourceGroup.name,
         storageImageReference: {
-            offer: __config.offer,
+            offer: __config.params.offer,
             publisher: "Canonical",
-            sku: __config.sku,
-            version: __config.version,
+            sku: __config.params.sku,
+            version: __config.params.version,
         },
         storageOsDisk: {
             caching: "ReadWrite",
@@ -84,9 +84,9 @@ for (let index = 1; index <= __config.vmNumber; index++) {
             name: `mytestosdisk${index}`,
         },
         tags: {
-            environment: __config.tag,
+            environment: __config.params.tag,
         },
-        vmSize: __config.vmsize,
+        vmSize: __config.params.vm_size,
     });
 
     
