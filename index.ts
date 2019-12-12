@@ -86,7 +86,7 @@ for (let index = 1; index <= __config.params.vm_number; index++) {
         tags: {
             environment: __config.params.tag,
         },
-        vmSize: __config.params.vm_size,
+        vmSize: __config.params.node_size,
     });
 
     
