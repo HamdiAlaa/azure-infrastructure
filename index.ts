@@ -9,7 +9,7 @@ let ipAddressesList: Output<string>[] = [];
 let dnsOutputArray: Output<string>[] = [];
 
 //Create an Azure Resource Group
-const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__config.params.tag}`, {
+const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__config.params.type}`, {
     location: __config.params.location,
 });
 const resourceGroupName = resourceGroup.name;
@@ -17,7 +17,7 @@ const resourceGroupName = resourceGroup.name;
 const mainVirtualNetwork = new azure.network.VirtualNetwork("main", {
     addressSpaces: ["10.0.0.0/16"],
     location: resourceGroup.location,
-    name: `${__config.params.tag}-network`,
+    name: `${__config.params.type}-network`,
     resourceGroupName: resourceGroup.name,
 });
 
@@ -39,7 +39,7 @@ for (let index = 1; index <= __config.params.node_number; index++) {
     const publicIp = new azure.network.PublicIp(`serverIp${index}`, {
         resourceGroupName,
         allocationMethod: "Dynamic",
-        domainNameLabel:`dns-${__config.params.tag}-${index}`,
+        domainNameLabel:`dns-${__config.params.type}-${index}`,
     });
 
     const mainNetworkInterface = new azure.network.NetworkInterface(`main${index}`, {
@@ -50,7 +50,7 @@ for (let index = 1; index <= __config.params.node_number; index++) {
             publicIpAddressId: publicIp.id
         }],
         location: resourceGroup.location,
-        name: `${__config.params.tag}-nic-${index}`,
+        name: `${__config.params.type}-nic-${index}`,
         resourceGroupName: resourceGroup.name,
     });
 
@@ -58,7 +58,7 @@ for (let index = 1; index <= __config.params.node_number; index++) {
 
     const mainVirtualMachine = new azure.compute.VirtualMachine(`VM-${index}`, {
         location: resourceGroup.location,
-        name: `${__config.params.tag}-vm-${index}`,
+        name: `${__config.params.type}-vm-${index}`,
         networkInterfaceIds: [mainNetworkInterface.id],
         osProfile: {
             adminPassword: __config.params.password,
@@ -84,7 +84,7 @@ for (let index = 1; index <= __config.params.node_number; index++) {
             name: `mytestosdisk${index}`,
         },
         tags: {
-            environment: __config.params.tag,
+            environment: __config.params.type,
         },
         vmSize: __config.params.node_size,
     });
