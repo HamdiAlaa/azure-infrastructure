@@ -33,7 +33,7 @@ const internal = new azure.network.Subnet("internal", {
 
 
 // main interface
-for (let index = 1; index <= __config.params.vm_number; index++) {
+for (let index = 1; index <= __config.params.node_number; index++) {
 
     // Now allocate a public IP and assign it to our NIC.
     const publicIp = new azure.network.PublicIp(`serverIp${index}`, {
