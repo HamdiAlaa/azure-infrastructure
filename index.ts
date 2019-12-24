@@ -1,23 +1,23 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
 import { Output } from "@pulumi/pulumi";
-let __config = require('../config/_az_vm.json');
 
+const __ = new pulumi.Config();
 
 //Outputs Declarations
 let ipAddressesList: Output<string>[] = [];
 let dnsOutputArray: Output<string>[] = [];
 
 //Create an Azure Resource Group
-const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__config.params.type}`, {
-    location: __config.params.location,
+const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__.require('type')}`, {
+    location: __.require('location'),
 });
 const resourceGroupName = resourceGroup.name;
 //NetWork
 const mainVirtualNetwork = new azure.network.VirtualNetwork("main", {
     addressSpaces: ["10.0.0.0/16"],
     location: resourceGroup.location,
-    name: `${__config.params.type}-network`,
+    name: `${__.require('type')}-network`,
     resourceGroupName: resourceGroup.name,
 });
 
@@ -33,13 +33,13 @@ const internal = new azure.network.Subnet("internal", {
 
 
 // main interface
-for (let index = 1; index <= __config.params.node_number; index++) {
+for (let index = 1; index <= +__.require('node_number'); index++) {
 
     // Now allocate a public IP and assign it to our NIC.
     const publicIp = new azure.network.PublicIp(`serverIp${index}`, {
         resourceGroupName,
         allocationMethod: "Dynamic",
-        domainNameLabel:`dns-${__config.params.type}-${index}`,
+        domainNameLabel:`dns-${__.require('type')}-${index}`,
     });
 
     const mainNetworkInterface = new azure.network.NetworkInterface(`main${index}`, {
@@ -50,7 +50,7 @@ for (let index = 1; index <= __config.params.node_number; index++) {
             publicIpAddressId: publicIp.id
         }],
         location: resourceGroup.location,
-        name: `${__config.params.type}-nic-${index}`,
+        name: `${__.require('type')}-nic-${index}`,
         resourceGroupName: resourceGroup.name,
     });
 
@@ -58,11 +58,11 @@ for (let index = 1; index <= __config.params.node_number; index++) {
 
     const mainVirtualMachine = new azure.compute.VirtualMachine(`VM-${index}`, {
         location: resourceGroup.location,
-        name: `${__config.params.type}-vm-${index}`,
+        name: `${__.require('type')}-vm-${index}`,
         networkInterfaceIds: [mainNetworkInterface.id],
         osProfile: {
-            adminPassword: __config.params.password,
-            adminUsername: __config.params.username,
+            adminPassword: __.require('password'),
+            adminUsername: __.require('username'),
             computerName: `hostname${index}`,
         },
         deleteDataDisksOnTermination: true,
@@ -72,10 +72,10 @@ for (let index = 1; index <= __config.params.node_number; index++) {
         },
         resourceGroupName: resourceGroup.name,
         storageImageReference: {
-            offer: __config.params.offer,
+            offer: __.require('offer'),
             publisher: "Canonical",
-            sku: __config.params.sku,
-            version: __config.params.version,
+            sku: __.require('sku'),
+            version: "latest",
         },
         storageOsDisk: {
             caching: "ReadWrite",
@@ -84,9 +84,9 @@ for (let index = 1; index <= __config.params.node_number; index++) {
             name: `mytestosdisk${index}`,
         },
         tags: {
-            environment: __config.params.type,
+            environment: __.require('type'),
         },
-        vmSize: __config.params.node_size,
+        vmSize: __.require('node_size'),
     });
 
     
