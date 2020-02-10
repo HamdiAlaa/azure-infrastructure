@@ -7,9 +7,10 @@ const __ = new pulumi.Config();
 //Outputs Declarations
 let ipAddressesList: Output<string>[] = [];
 let dnsOutputArray: Output<string>[] = [];
+let privateIpList: Output<String>[]=[];
 
 //Create an Azure Resource Group
-const resourceGroup = new azure.core.ResourceGroup(`Azure-nodes-RG-${__.require('type')}`, {
+const resourceGroup = new azure.core.ResourceGroup(`${__.require('cluster_name')}-rsgrp`, {
     location: __.require('location'),
 });
 const resourceGroupName = resourceGroup.name;
@@ -17,7 +18,7 @@ const resourceGroupName = resourceGroup.name;
 const mainVirtualNetwork = new azure.network.VirtualNetwork("main", {
     addressSpaces: ["10.0.0.0/16"],
     location: resourceGroup.location,
-    name: `${__.require('type')}-network`,
+    name: `${__.require('cluster_name')}-network`,
     resourceGroupName: resourceGroup.name,
 });
 
@@ -36,10 +37,10 @@ const internal = new azure.network.Subnet("internal", {
 for (let index = 1; index <= +__.require('node_number'); index++) {
 
     // Now allocate a public IP and assign it to our NIC.
-    const publicIp = new azure.network.PublicIp(`serverIp${index}`, {
+    const publicIp = new azure.network.PublicIp(`Ip${index}`, {
         resourceGroupName,
         allocationMethod: "Dynamic",
-        domainNameLabel:`dns-${__.require('type')}-${index}`,
+        domainNameLabel:`dns-${__.require('cluster_name')}-${index}`,
     });
 
     const mainNetworkInterface = new azure.network.NetworkInterface(`main${index}`, {
@@ -50,7 +51,7 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
             publicIpAddressId: publicIp.id
         }],
         location: resourceGroup.location,
-        name: `${__.require('type')}-nic-${index}`,
+        name: `${__.require('cluster_name')}-network-interface-${index}`,
         resourceGroupName: resourceGroup.name,
     });
 
@@ -58,7 +59,7 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
 
     const mainVirtualMachine = new azure.compute.VirtualMachine(`VM-${index}`, {
         location: resourceGroup.location,
-        name: `${__.require('type')}-vm-${index}`,
+        name: `${__.require('cluster_name')}-node-${index}`,
         networkInterfaceIds: [mainNetworkInterface.id],
         osProfile: {
             adminPassword: __.require('password'),
@@ -84,7 +85,7 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
             name: `mytestosdisk${index}`,
         },
         tags: {
-            environment: __.require('type'),
+            environment: __.require('cluster_name'),
         },
         vmSize: __.require('node_size'),
     });
@@ -97,6 +98,8 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
         return pulumi.output(azure.network.getPublicIP({ name: d.name, resourceGroupName: d.resourceGroupName }).ipAddress);
     });
     ipAddressesList.push(ipAddres);
+    privateIpList.push(mainNetworkInterface.privateIpAddress);
+    
     const dns = done.apply(d=>{
         return pulumi.output(azure.network.getPublicIP({ name: d.name, resourceGroupName: d.resourceGroupName }).domainNameLabel+'.eastus.cloudapp.azure.com');
     });
@@ -105,13 +108,14 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
 }//End Boucle
 
 //Create an Azure resource (Storage Account)
-const account = new azure.storage.Account("storage", {
-    resourceGroupName: resourceGroup.name,
-    accountTier: "Standard",
-    accountReplicationType: "LRS",
-});
+// const account = new azure.storage.Account("storage", {
+//     resourceGroupName: resourceGroup.name,
+//     accountTier: "Standard",
+//     accountReplicationType: "LRS",
+// });
 
 //EXPORTS
 // export const ips = az_infra.ipAddress;
 export const ips = ipAddressesList;
+export const privateIps = privateIpList;
 export const dns = dnsOutputArray;
