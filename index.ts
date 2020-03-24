@@ -101,7 +101,6 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
         location: resourceGroup.location,
         name: `${__.require('cluster_name')}-network-interface-${index}`,
         resourceGroupName: resourceGroup.name,
-        networkSecurityGroupId:network_security_group.id
     });
 
     //Create the virtual machine 
@@ -119,11 +118,11 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
             EOF
             `,
         },
-        plan:{
-            name:"os154",
-            product:"rancheros",
-            publisher:"rancher",           
-        },
+        // plan:{
+        //     name:"os154",
+        //     product:"rancheros",
+        //     publisher:"rancher",           
+        // },
         deleteDataDisksOnTermination: true,
         deleteOsDiskOnTermination: true,
         osProfileLinuxConfig: {
@@ -135,17 +134,17 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
         },
         
         resourceGroupName: resourceGroup.name,
-        // storageImageReference: {
-        //     // offer: __.require('offer'),
-        //     // publisher: "Canonical",
-        //     // sku: __.require('sku'),
-        //     // version: "latest",
-        //     offer:"rancheros",
-        //     publisher:"rancher",
-        //     sku:"os154",
-        //     version:"1.5.4",
+        storageImageReference: {
+            offer: __.require('offer'),
+            publisher: "Canonical",
+            sku: __.require('sku'),
+            version: "latest",
+            // offer:"rancheros",
+            // publisher:"rancher",
+            // sku:"os154",
+            // version:"1.5.4"
 
-        // },
+        },
         storageOsDisk: {
             caching: "ReadWrite",
             createOption: "FromImage",
