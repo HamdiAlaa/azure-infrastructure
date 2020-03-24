@@ -101,7 +101,6 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
         location: resourceGroup.location,
         name: `${__.require('cluster_name')}-network-interface-${index}`,
         resourceGroupName: resourceGroup.name,
-        networkSecurityGroupId:network_security_group.id
     });
 
     //Create the virtual machine 
