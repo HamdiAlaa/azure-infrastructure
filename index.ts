@@ -1,14 +1,13 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
-import { Output } from "@pulumi/pulumi";
 
 const __ = new pulumi.Config();
 
 //Outputs Declarations
-let ipAddressesList: Output<string>[] = [];
-let dnsOutputArray: Output<string>[] = [];
-let privateIpList: Output<String>[]=[];
-
+let ipAddressesList: pulumi.Output<String>[] = [];
+let dnsOutputArray: pulumi.Output<String>[] = [];
+let privateIpList: pulumi.Output<String>[]=[];
+let ip: pulumi.Output<String>;
 //Create an Azure Resource Group
 const resourceGroup = new azure.core.ResourceGroup(`${__.require('cluster_name')}-rsgrp`, {
     location: __.require('location'),
@@ -88,6 +87,10 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
         allocationMethod: "Dynamic",
         domainNameLabel:`dns-${__.require('cluster_name')}-${index}`
     });
+    // DNS OUTPUT
+    dnsOutputArray.push(publicIp.fqdn);
+
+    // MAIN NETWORK
     const mainNetworkInterface = new azure.network.NetworkInterface(`main${index}`, {
         ipConfigurations: [{
             name: `testconfiguration${index}`,
@@ -99,8 +102,10 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
         name: `${__.require('cluster_name')}-network-interface-${index}`,
         resourceGroupName: resourceGroup.name,
     });
+    privateIpList.push(mainNetworkInterface.privateIpAddress);
 
-    //Create the virtual machine 
+
+    // CREATE VIRTUAL NODE 
     const mainVirtualMachine = new azure.compute.VirtualMachine(`VM-${index}`, {
         location: resourceGroup.location,
         name: `${__.require('cluster_name')}-node-${index}`,
@@ -159,23 +164,16 @@ for (let index = 1; index <= +__.require('node_number'); index++) {
     // resource to create, and then lookup the IP address again to report its public IP.
     const done = pulumi.all({ _: mainVirtualMachine.id, name: publicIp.name, resourceGroupName: publicIp.resourceGroupName });
     const ipAddres = done.apply(d => {
-        return pulumi.output(azure.network.getPublicIP({ name: d.name, resourceGroupName: d.resourceGroupName }).ipAddress);
+        return pulumi.output(azure.network.getPublicIP({ name: d.name, resourceGroupName: d.resourceGroupName },{async:true}).then(ip=>ip.ipAddress));
     });
     ipAddressesList.push(ipAddres);
-    privateIpList.push(mainNetworkInterface.privateIpAddress);
-    const dns = done.apply(d=>{
-        return pulumi.output(azure.network.getPublicIP({ name: d.name, resourceGroupName: d.resourceGroupName }).domainNameLabel+'.westus.cloudapp.azure.com');
-    });
-    dnsOutputArray.push(dns);
+
+    // const dns = done.apply(d=>{
+    //     return pulumi.output(azure.network.getPublicIP({ name: d.name, resourceGroupName: d.resourceGroupName }));
+    // });
 
 }//End Boucle
 
-//Create an Azure resource (Storage Account)
-// const account = new azure.storage.Account("storage", {
-//     resourceGroupName: resourceGroup.name,
-//     accountTier: "Standard",
-//     accountReplicationType: "LRS",
-// });
 
 //EXPORTS
 // export const ips = az_infra.ipAddress;
